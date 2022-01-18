@@ -13,7 +13,7 @@ contract CrowdFunding{
 
     struct Request{
         string description;
-        address payable recipients;
+        address payable recipient;
         uint amount;
         bool completed;
         uint numberOfVotters;
@@ -29,8 +29,9 @@ contract CrowdFunding{
     event GetRefunds(address _address, uint _amount);
     event GoalChanged(uint oldGoal, uint newGoal);
     event StartedNewCrowdFund(uint newMinimumContribution, uint newGoal, uint newDeadLine);
-    event CreateRequest(string last_description, address last_recipients, uint last_amount);
+    event CreateRequest(string last_description, address last_recipient, uint last_amount);
     event Vote(address _voter, uint _idRequest, bool _vote);
+    event Payment(uint _idRequest, bool _isCompleted, uint _amount);
 
     constructor(uint _goal, uint _deadline){
         goal = _goal;
@@ -53,13 +54,12 @@ contract CrowdFunding{
     function contribuite() public payable {
         require(block.timestamp < deadline, "deadline has passed");
         require(msg.value >= minimumContribution, "contribution is too low");
-
         if(contributors[msg.sender] == 0){
             noOfContributors++;
         }
-
         contributors[msg.sender] += msg.value;
         raisedAmount += msg.value;
+        //emit to blockchain
         emit Contribuite(msg.sender, msg.value);
     }
 
@@ -78,8 +78,8 @@ contract CrowdFunding{
         contributors[msg.sender] = 0;
         noOfContributors = noOfContributors - 1 ;
         raisedAmount = raisedAmount - value;
+        //emit to blockchain
         emit GetRefunds(recipient, value);
-
     }
 
     function changeGoal(uint newGoal) external OnlyOwner {
@@ -103,8 +103,8 @@ contract CrowdFunding{
         minimumContribution = newMinimumContribution;
         goal = newGoal;
         deadline = block.timestamp + newDeadline;
+        //emit to blockchain
         emit StartedNewCrowdFund(newMinimumContribution, newGoal, newDeadline);
-
     }
 
      /**@dev this create new Request for CrowdFunding */
@@ -112,11 +112,12 @@ contract CrowdFunding{
         Request storage newRequest = requests[numberRequest];
         numberRequest++;
         newRequest.description = _description;
-        newRequest.recipients = _recipient;
+        newRequest.recipient = _recipient;
         newRequest.amount = _amount;
         newRequest.completed = false;
         newRequest.numberOfVotters = 0;
-        emit CreateRequest(newRequest.description, newRequest.recipients,newRequest.amount);
+        //emit to blockchain
+        emit CreateRequest(newRequest.description, newRequest.recipient ,newRequest.amount);
     }  
 
     /** @dev this is vote function for Request created by admin! */
@@ -127,5 +128,18 @@ contract CrowdFunding{
         thisRequest.voters[msg.sender] = true;
         thisRequest.numberOfVotters++;
         emit Vote(msg.sender, _numberRequest, true);
+    }
+
+    function payment(uint _requestNumber)external OnlyOwner{
+        require(raisedAmount >=goal, "The goal has not been reached");
+        Request storage thisRequest = requests[_requestNumber];
+        require(thisRequest.completed == false, "The request has already been completed");
+        //it verify that 50% votters 
+        require(thisRequest.numberOfVotters > noOfContributors/2, "There are no votes");
+        thisRequest.recipient.transfer(thisRequest.amount);
+        thisRequest.completed = true;
+
+        //emit to blockchain
+        emit Payment(_requestNumber, thisRequest.completed,thisRequest.amount);
     }
 }   
