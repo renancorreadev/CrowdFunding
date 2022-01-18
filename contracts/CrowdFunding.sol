@@ -20,9 +20,16 @@ contract CrowdFunding{
         mapping(address => bool) voters;
     }
 
-    mapping(uint => Request) public requests;
-    uint public numberRequest;
+    struct RequestOpinion{
+        string title;
+        string opinion; 
+    }
 
+    mapping(uint => Request) public requests;
+    mapping(uint => RequestOpinion) public opinionRequest;
+    uint public numberRequest;
+    uint public numberOpinionRequest;
+ 
 
     event Contribuite(address _address , uint amount);
     event StartContract( uint _deadline, uint _goal);
@@ -32,6 +39,7 @@ contract CrowdFunding{
     event CreateRequest(string last_description, address last_recipient, uint last_amount);
     event Vote(address _voter, uint _idRequest, bool _vote);
     event Payment(uint _idRequest, bool _isCompleted, uint _amount);
+    event CreateOpinionRequest(address _addressCall, string  _title, string  _opinion);
 
     constructor(uint _goal, uint _deadline){
         goal = _goal;
@@ -120,6 +128,16 @@ contract CrowdFunding{
         emit CreateRequest(newRequest.description, newRequest.recipient ,newRequest.amount);
     }  
 
+    /**@dev this function create new Opinion for Request */
+    function createOpinionRequest(string memory _title, string memory _opinion) external {
+        RequestOpinion storage newRequestOpinion = opinionRequest[numberOpinionRequest];
+        numberOpinionRequest++;
+        newRequestOpinion.title = _title;
+        newRequestOpinion.opinion = _opinion;
+        //emit to blockchain
+        emit CreateOpinionRequest(msg.sender, newRequestOpinion.title, newRequestOpinion.opinion);
+    }
+
     /** @dev this is vote function for Request created by admin! */
     function voteRequest(uint _numberRequest) public {
         require(contributors[msg.sender] > 0, "You have not contributed to the crowdfunding");
@@ -130,7 +148,7 @@ contract CrowdFunding{
         emit Vote(msg.sender, _numberRequest, true);
     }
 
-    function payment(uint _requestNumber)external OnlyOwner{
+    function payment(uint _requestNumber) external OnlyOwner{
         require(raisedAmount >=goal, "The goal has not been reached");
         Request storage thisRequest = requests[_requestNumber];
         require(thisRequest.completed == false, "The request has already been completed");
