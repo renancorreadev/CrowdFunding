@@ -1,0 +1,9 @@
+{
+  "name": "crowdfunding",
+  "version": "1.0.0",
+  "main": "index.js",
+  "repository": "http://",
+  "author": "syxcripto",
+  "license": "unlicensed",
+  "private": false
+}
