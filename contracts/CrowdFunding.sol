@@ -17,7 +17,7 @@ contract CrowdFunding{
         uint amount;
         bool completed;
         uint numberOfVotters;
-        mapping(address => bool) votters;
+        mapping(address => bool) voters;
     }
 
     mapping(uint => Request) public requests;
@@ -30,6 +30,7 @@ contract CrowdFunding{
     event GoalChanged(uint oldGoal, uint newGoal);
     event StartedNewCrowdFund(uint newMinimumContribution, uint newGoal, uint newDeadLine);
     event CreateRequest(string last_description, address last_recipients, uint last_amount);
+    event Vote(address _voter, uint _idRequest, bool _vote);
 
     constructor(uint _goal, uint _deadline){
         goal = _goal;
@@ -106,8 +107,8 @@ contract CrowdFunding{
 
     }
 
+     /**@dev this create new Request for CrowdFunding */
     function createRequest(string memory _description, address payable _recipient, uint _amount) public OnlyOwner{
-        /**@dev this create new Request for CrowdFunding */
         Request storage newRequest = requests[numberRequest];
         numberRequest++;
         newRequest.description = _description;
@@ -117,4 +118,14 @@ contract CrowdFunding{
         newRequest.numberOfVotters = 0;
         emit CreateRequest(newRequest.description, newRequest.recipients,newRequest.amount);
     }  
-}
+
+    /** @dev this is vote function for Request created by admin! */
+    function voteRequest(uint _numberRequest) public {
+        require(contributors[msg.sender] > 0, "You have not contributed to the crowdfunding");
+        Request storage thisRequest = requests[_numberRequest];
+        require(thisRequest.voters[msg.sender] == false, "You have already voted");
+        thisRequest.voters[msg.sender] = true;
+        thisRequest.numberOfVotters++;
+        emit Vote(msg.sender, _numberRequest, true);
+    }
+}   
