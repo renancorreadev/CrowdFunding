@@ -11,12 +11,25 @@ contract CrowdFunding{
     uint public goal;
     uint public raisedAmount;
 
+    struct Request{
+        string description;
+        address payable recipients;
+        uint amount;
+        bool completed;
+        uint numberOfVotters;
+        mapping(address => bool) votters;
+    }
+
+    mapping(uint => Request) public requests;
+    uint public numberRequest;
+
 
     event Contribuite(address _address , uint amount);
     event StartContract( uint _deadline, uint _goal);
     event GetRefunds(address _address, uint _amount);
     event GoalChanged(uint oldGoal, uint newGoal);
-    event startedNewCrowdFund(uint newMinimumContribution, uint newGoal, uint newDeadLine);
+    event StartedNewCrowdFund(uint newMinimumContribution, uint newGoal, uint newDeadLine);
+    event CreateRequest(string last_description, address last_recipients, uint last_amount);
 
     constructor(uint _goal, uint _deadline){
         goal = _goal;
@@ -89,8 +102,19 @@ contract CrowdFunding{
         minimumContribution = newMinimumContribution;
         goal = newGoal;
         deadline = block.timestamp + newDeadline;
-        emit startedNewCrowdFund(newMinimumContribution, newGoal, newDeadline);
+        emit StartedNewCrowdFund(newMinimumContribution, newGoal, newDeadline);
 
     }
-    
+
+    function createRequest(string memory _description, address payable _recipient, uint _amount) public OnlyOwner{
+        /**@dev this create new Request for CrowdFunding */
+        Request storage newRequest = requests[numberRequest];
+        numberRequest++;
+        newRequest.description = _description;
+        newRequest.recipients = _recipient;
+        newRequest.amount = _amount;
+        newRequest.completed = false;
+        newRequest.numberOfVotters = 0;
+        emit CreateRequest(newRequest.description, newRequest.recipients,newRequest.amount);
+    }  
 }
